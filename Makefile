@@ -15,6 +15,7 @@ else
 DEBUGFLAGS   :=
 endif
 VERILATORDEFINES := -DEXTI -DEXTM
+VERILATOR_OBJ := verilated.o verilated_threads.o
 
 .PHONY: all test debug clean
 
@@ -51,7 +52,7 @@ else
 	cd obj_dir && make -f VCPU.mk
 endif
 
-verilated.o: /usr/share/verilator/include/verilated.cpp
+verilated%.o: /usr/share/verilator/include/verilated%.cpp
 	$(COMPILER) $(DEBUGFLAGS) $(CPPFLAGS) -c $< -o $@
 
 gui/%.o: gui/%.cpp obj_dir/VCPU.h
@@ -61,12 +62,12 @@ gui/%.o: gui/%.cpp obj_dir/VCPU.h
 gui/resources.cpp: rvgui.gresource.xml $(shell $(GLIB_COMPILE_RESOURCES) --sourcedir=resources --generate-dependencies rvgui.gresource.xml)
 	$(GLIB_COMPILE_RESOURCES) --target=$@ --sourcedir=resources --generate-source $<
 
-$(OUTPUT): $(GUIOBJ) verilated.o obj_dir/VCPU__ALL.o
+$(OUTPUT): $(GUIOBJ) $(VERILATOR_OBJ) obj_dir/VCPU__ALL.o
 	@ printf "\e[2m[\e[22;36mld\e[39;2m]\e[22m $@\n"
 	@ $(COMPILER) $^ -o $@ $(DEPLIBS)
 
-CPU_sim: obj_dir/VCPU.h CPU_sim.cpp verilated.o
-	$(COMPILER) $(CPPFLAGS) $(DEBUGFLAGS) -Wall -pthread -Dcimg_display=1 -Iobj_dir $(shell pkg-config --cflags verilator) CPU_sim.cpp verilated.o obj_dir/VCPU__ALL.o $(shell pkg-config --libs x11) -o CPU_sim
+CPU_sim: obj_dir/VCPU.h CPU_sim.cpp $(VERILATOR_OBJ)
+	$(COMPILER) $(CPPFLAGS) $(DEBUGFLAGS) -Wall -pthread -Dcimg_display=1 -Iobj_dir $(shell pkg-config --cflags verilator) CPU_sim.cpp $(VERILATOR_OBJ) obj_dir/VCPU__ALL.o $(shell pkg-config --libs x11) -o CPU_sim
 
 DEPFILE  := .dep
 DEPTOKEN := "\# MAKEDEPENDS"
